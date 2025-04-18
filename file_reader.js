@@ -1,4 +1,4 @@
-let currentFilePath = null;
+let currentFileHandle = null;
 
 // 获取DOM元素
 const readFileBtn = document.getElementById('readFileBtn');
@@ -21,43 +21,31 @@ function showToast(message, isError = false) {
 // 读取文件
 document.getElementById('readFileBtn').addEventListener('click', async () => {
     try {
-        const { invoke } = await import('@tauri-apps/api/tauri');
-        const filePath = await invoke('open_file');
-        currentFilePath = filePath;
-        
-        const contents = await invoke('read_file', { path: filePath });
+        const [fileHandle] = await window.showOpenFilePicker({
+            types: [{
+                description: '文本文件',
+                accept: {
+                    'text/plain': ['.txt'],
+                }
+            }]
+        });
+        currentFileHandle = fileHandle;
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
         document.getElementById('fileContent').value = contents;
         
         // 更新文件信息
-        updateFileInfo(filePath);
+        updateFileInfo(file);
         showToast('文件读取成功');
     } catch (error) {
-        showToast(error, true);
-    }
-});
-
-// 保存文件
-document.getElementById('saveFileBtn').addEventListener('click', async () => {
-    if (!currentFilePath) {
-        showToast('请先选择文件', true);
-        return;
-    }
-    
-    try {
-        const { invoke } = await import('@tauri-apps/api/tauri');
-        const contents = document.getElementById('fileContent').value;
-        await invoke('save_file', { 
-            path: currentFilePath,
-            contents: contents
-        });
-        showToast('文件保存成功');
-    } catch (error) {
-        showToast(error, true);
+        if (error.name !== 'AbortError') {
+            showToast('无法读取文件：' + error.message, true);
+        }
     }
 });
 
 // 另存为
-saveAsFileBtn.addEventListener('click', async () => {
+document.getElementById('saveAsFileBtn').addEventListener('click', async () => {
     try {
         const fileHandle = await window.showSaveFilePicker({
             types: [{
@@ -67,23 +55,31 @@ saveAsFileBtn.addEventListener('click', async () => {
                 }
             }]
         });
+        
         const writable = await fileHandle.createWritable();
-        await writable.write(fileContent.value);
+        await writable.write(document.getElementById('fileContent').value);
         await writable.close();
-        currentFilePath = fileHandle.name;
-        updateFileInfo(fileHandle.name);
-        showToast('文件保存成功！');
+        
+        currentFileHandle = fileHandle;
+        const file = await fileHandle.getFile();
+        updateFileInfo(file);
+        showToast('文件保存成功');
     } catch (error) {
         if (error.name !== 'AbortError') {
-            console.error('保存文件失败', error);
             showToast('保存文件失败：' + error.message, true);
         }
     }
 });
 
 // 更新文件信息显示
-function updateFileInfo(filePath) {
-    fileInfo.innerHTML = `文件路径：${filePath}`;
+function updateFileInfo(file) {
+    if (file) {
+        fileInfo.innerHTML = `文件名：${file.name}
+文件大小：${formatFileSize(file.size)}
+最后修改时间：${new Date(file.lastModified).toLocaleString()}`;
+    } else {
+        fileInfo.textContent = '未选择文件';
+    }
 }
 
 // 格式化文件大小
