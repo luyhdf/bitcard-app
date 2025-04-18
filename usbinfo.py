@@ -12,6 +12,17 @@ def format_size(size_in_bytes):
     else:  # 大于等于1GB，使用GB
         return f"{size_in_bytes / (1024 * 1024 * 1024):.2f} GB"
 
+def format_serial_number(serial):
+    """格式化序列号"""
+    if not serial:
+        return "无序列号"
+    try:
+        # 尝试将序列号转换为十六进制字符串
+        hex_str = ''.join([f'{ord(c):02x}' for c in serial])
+        return hex_str
+    except:
+        return str(serial)
+
 def get_removable_drives():
     drives = []
     bitmask = ctypes.windll.kernel32.GetLogicalDrives()
@@ -67,6 +78,8 @@ def list_usb_devices():
                 print(f"设备ID: {device.DeviceID}")
                 print(f"制造商: {device.Manufacturer}")
                 print(f"接口类型: {device.InterfaceType}")
+                serial = device.ole_object.SerialNumber
+                print(f"序列号: {format_serial_number(serial)}")
                 if device.Size:
                     print(f"物理设备大小: {format_size(float(device.Size))}")
                 print("-" * 50)
