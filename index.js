@@ -3,9 +3,9 @@ let currentFileHandle = null;
 
 // 获取DOM元素
 const readFileBtn = document.getElementById('readFileBtn');
-const saveFileBtn = document.getElementById('saveFileBtn');
 const saveAsFileBtn = document.getElementById('saveAsFileBtn');
 const openFolderBtn = document.getElementById('openFolderBtn');
+const showHiddenFiles = document.getElementById('showHiddenFiles');
 const fileInfo = document.getElementById('fileInfo');
 const fileContent = document.getElementById('fileContent');
 const folderInfo = document.getElementById('folderInfo');
@@ -38,30 +38,47 @@ async function readFile(fileHandle) {
     }
 }
 
-// 打开文件夹
-openFolderBtn.addEventListener('click', async () => {
+// 检查是否是隐藏文件
+function isHiddenFile(name) {
+    // Windows 系统隐藏文件判断
+    if (name.startsWith('.') || 
+        name === 'System Volume Information' || 
+        name === '$RECYCLE.BIN' || 
+        name === 'System Volume Information' ||
+        name.toLowerCase() === 'thumbs.db') {
+        return true;
+    }
+    return false;
+}
+
+// 监听显示隐藏文件开关变化
+showHiddenFiles.addEventListener('change', async () => {
+    if (currentDirHandle) {
+        try {
+            await refreshFileList();
+            showToast(showHiddenFiles.checked ? '已显示隐藏文件' : '已隐藏隐藏文件');
+        } catch (error) {
+            console.error('切换显示隐藏文件时出错:', error);
+            showToast('切换显示隐藏文件失败: ' + error.message, true);
+        }
+    }
+});
+
+// 刷新文件列表
+async function refreshFileList() {
+    if (!currentDirHandle) return;
+    
+    folderContent.innerHTML = '';
+    
     try {
-        // 检查是否在主窗口中
-        if (window.self !== window.top) {
-            showToast('请在主窗口中打开此页面', true);
-            return;
-        }
-
-        // 检查浏览器是否支持 File System Access API
-        if (!window.showDirectoryPicker) {
-            showToast('您的浏览器不支持文件夹选择功能，请使用最新版本的 Chrome 或 Edge 浏览器', true);
-            return;
-        }
-
-        currentDirHandle = await window.showDirectoryPicker();
-        folderInfo.style.display = 'block';
-        folderContent.innerHTML = '';
-        
-        // 显示当前文件夹路径
-        currentPath.innerHTML = `<strong>当前路径：</strong>${currentDirHandle.name}`;
-        
         // 遍历文件夹内容
         for await (const entry of currentDirHandle.values()) {
+            // 如果隐藏文件开关关闭，且是隐藏文件，则跳过
+            if (!showHiddenFiles.checked && isHiddenFile(entry.name)) {
+                console.log('隐藏文件:', entry.name); // 调试用
+                continue;
+            }
+            
             const div = document.createElement('div');
             div.className = 'folder-entry';
             
@@ -97,8 +114,40 @@ openFolderBtn.addEventListener('click', async () => {
             
             folderContent.appendChild(div);
         }
+    } catch (error) {
+        console.error('刷新文件列表时出错:', error);
+        showToast('刷新文件列表失败: ' + error.message, true);
+    }
+}
+
+// 打开文件夹
+openFolderBtn.addEventListener('click', async () => {
+    try {
+        // 检查是否在主窗口中
+        if (window.self !== window.top) {
+            showToast('请在主窗口中打开此页面', true);
+            return;
+        }
+
+        // 检查浏览器是否支持 File System Access API
+        if (!window.showDirectoryPicker) {
+            showToast('您的浏览器不支持文件夹选择功能，请使用最新版本的 Chrome 或 Edge 浏览器', true);
+            return;
+        }
         
-        showToast('文件夹打开成功');
+        // 打开目录选择器
+        currentDirHandle = await window.showDirectoryPicker({
+            startIn: 'documents' // 从文档目录开始
+        });
+        
+        folderInfo.style.display = 'block';
+        
+        // 显示当前文件夹路径
+        currentPath.innerHTML = `<strong>当前路径：</strong>${currentDirHandle.name}`;
+        
+        // 刷新文件列表
+        await refreshFileList();
+        
     } catch (error) {
         if (error.name === 'AbortError') {
             // 用户取消选择，不显示错误
