@@ -12,13 +12,16 @@ const folderInfo = document.getElementById('folderInfo');
 const folderContent = document.getElementById('folderContent');
 const currentPath = document.getElementById('currentPath');
 const toast = document.getElementById('toast');
+const saveFileTip = document.getElementById('saveFileTip');
+const saveAsFileTip = document.getElementById('saveAsFileTip');
+const openFileTip = document.getElementById('openFileTip');
 
 // 显示提示信息
-function showToast(message, isError = false) {
-    toast.textContent = message;
-    toast.className = `toast ${isError ? 'error' : ''} show`;
+function showTip(element, message, isError = false) {
+    element.textContent = message;
+    element.className = `button-tip ${isError ? 'error' : ''} show`;
     setTimeout(() => {
-        toast.className = 'toast';
+        element.className = 'button-tip';
     }, 3000);
 }
 
@@ -40,10 +43,10 @@ showHiddenFiles.addEventListener('change', async () => {
     if (currentDirHandle) {
         try {
             await refreshFileList();
-            showToast(showHiddenFiles.checked ? '已显示隐藏文件' : '已隐藏隐藏文件');
+            showTip(toast, showHiddenFiles.checked ? '已显示隐藏文件' : '已隐藏隐藏文件');
         } catch (error) {
             console.error('切换显示隐藏文件时出错:', error);
-            showToast('切换显示隐藏文件失败: ' + error.message, true);
+            showTip(toast, '切换显示隐藏文件失败: ' + error.message, true);
         }
     }
 });
@@ -67,9 +70,10 @@ async function refreshFileList() {
             
             if (entry.kind === 'file') {
                 const file = await entry.getFile();
+                const fileName = entry.name || file.name;
                 div.innerHTML = `
                     <div class="file-item">
-                        <span class="file-name">📄 ${entry.name}</span>
+                        <span class="file-name">📄 ${fileName}</span>
                         <span class="file-size">${formatFileSize(file.size)}</span>
                         <span class="file-date">${new Date(file.lastModified).toLocaleString()}</span>
                     </div>
@@ -77,6 +81,11 @@ async function refreshFileList() {
                 
                 // 添加点击事件
                 div.addEventListener('click', async () => {
+                    // 如果当前选中的是同一个文件，则不处理
+                    if (currentFileHandle && currentFileHandle.name === fileName) {
+                        return;
+                    }
+
                     // 移除其他选中项
                     document.querySelectorAll('.folder-entry.selected').forEach(el => {
                         el.classList.remove('selected');
@@ -84,18 +93,17 @@ async function refreshFileList() {
                     // 添加当前选中项
                     div.classList.add('selected');
                     
-                    // 读取文件
                     try {
                         const file = await entry.getFile();
                         const content = await file.text();
                         
-                        fileInfo.textContent = `文件名: ${file.name}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
+                        fileInfo.textContent = `文件名: ${fileName}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
                         fileContent.value = content;
                         
                         currentFileHandle = entry;
-                        showToast('文件读取成功');
+                        showTip(openFileTip, `已打开文件: ${fileName}`);
                     } catch (error) {
-                        showToast('读取文件失败: ' + error.message, true);
+                        showTip(openFileTip, '打开文件失败: ' + error.message, true);
                     }
                 });
             } else if (entry.kind === 'directory') {
@@ -110,7 +118,7 @@ async function refreshFileList() {
         }
     } catch (error) {
         console.error('刷新文件列表时出错:', error);
-        showToast('刷新文件列表失败: ' + error.message, true);
+        showTip(toast, '刷新文件列表失败: ' + error.message, true);
     }
 }
 
@@ -119,13 +127,13 @@ openFolderBtn.addEventListener('click', async () => {
     try {
         // 检查是否在主窗口中
         if (window.self !== window.top) {
-            showToast('请在主窗口中打开此页面', true);
+            showTip(toast, '请在主窗口中打开此页面', true);
             return;
         }
 
         // 检查浏览器是否支持 File System Access API
         if (!window.showDirectoryPicker) {
-            showToast('您的浏览器不支持文件夹选择功能，请使用最新版本的 Chrome 或 Edge 浏览器', true);
+            showTip(toast, '您的浏览器不支持文件夹选择功能，请使用最新版本的 Chrome 或 Edge 浏览器', true);
             return;
         }
         
@@ -148,9 +156,9 @@ openFolderBtn.addEventListener('click', async () => {
             return;
         }
         if (error.name === 'SecurityError') {
-            showToast('出于安全考虑，请在主窗口中打开此页面', true);
+            showTip(toast, '出于安全考虑，请在主窗口中打开此页面', true);
         } else {
-            showToast('打开文件夹失败: ' + error.message, true);
+            showTip(toast, '打开文件夹失败: ' + error.message, true);
         }
     }
 });
@@ -158,12 +166,12 @@ openFolderBtn.addEventListener('click', async () => {
 // 保存文件
 saveFileBtn.addEventListener('click', async () => {
     if (!fileContent.value) {
-        showToast('没有内容可保存', true);
+        showTip(saveFileTip, '没有内容可保存', true);
         return;
     }
 
     if (!currentFileHandle) {
-        showToast('请先打开或另存为文件', true);
+        showTip(saveFileTip, '请先打开或另存为文件', true);
         return;
     }
 
@@ -171,16 +179,16 @@ saveFileBtn.addEventListener('click', async () => {
         const writable = await currentFileHandle.createWritable();
         await writable.write(fileContent.value);
         await writable.close();
-        showToast('文件保存成功');
+        showTip(saveFileTip, '文件保存成功');
     } catch (error) {
-        showToast('保存文件失败: ' + error.message, true);
+        showTip(saveFileTip, '保存文件失败: ' + error.message, true);
     }
 });
 
 // 保存文件
 saveAsFileBtn.addEventListener('click', async () => {
     if (!fileContent.value) {
-        showToast('没有内容可保存', true);
+        showTip(saveAsFileTip, '没有内容可保存', true);
         return;
     }
 
@@ -200,10 +208,10 @@ saveAsFileBtn.addEventListener('click', async () => {
         await writable.close();
         
         currentFileHandle = fileHandle;
-        showToast('文件保存成功');
+        showTip(saveAsFileTip, '文件保存成功');
     } catch (error) {
         if (error.name !== 'AbortError') {
-            showToast('保存文件失败: ' + error.message, true);
+            showTip(saveAsFileTip, '保存文件失败: ' + error.message, true);
         }
     }
 });
