@@ -215,11 +215,37 @@ textarea {
 }
 
 /* 文件夹内容样式 */
+.file-list-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background-color: #e3f2fd;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #1976d2;
+}
+
+.file-list-header .file-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-list-header .file-size {
+    min-width: 80px;
+    text-align: right;
+}
+
+.file-list-header .file-date {
+    min-width: 120px;
+    text-align: right;
+}
+
 .file-list {
-    margin-top: 10px;
+    margin-top: 0;
     overflow-y: auto;
-    max-height: calc(100vh - 200px);
-    width: 100%;
+    max-height: calc(100vh - 250px);
 }
 
 .folder-entry {
