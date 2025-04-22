@@ -6,7 +6,6 @@ const saveAsFileBtn = document.getElementById('saveAsFileBtn');
 const saveFileBtn = document.getElementById('saveFileBtn');
 const openFolderBtn = document.getElementById('openFolderBtn');
 const showHiddenFiles = document.getElementById('showHiddenFiles');
-const fileInfo = document.getElementById('fileInfo');
 const fileContent = document.getElementById('fileContent');
 const folderInfo = document.getElementById('folderInfo');
 const folderContent = document.getElementById('folderContent');
@@ -97,9 +96,7 @@ async function refreshFileList() {
                         const file = await entry.getFile();
                         const content = await file.text();
                         
-                        fileInfo.textContent = `文件名: ${fileName}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
                         fileContent.value = content;
-                        
                         currentFileHandle = entry;
                         showTip(openFileTip, `已打开文件: ${fileName}`);
                     } catch (error) {
