@@ -1,7 +1,115 @@
 body {
     font-family: Arial, sans-serif;
-    max-width: 800px;
-    margin: 0 auto;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 300px;
+    background-color: #f5f5f5;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.sidebar-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    margin-bottom: 15px;
+}
+
+.sidebar-button:hover {
+    background-color: #45a049;
+}
+
+/* 显示隐藏文件切换开关样式 */
+.show-hidden-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.toggle-label {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4CAF50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.folder-info {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
     padding: 20px;
 }
 
@@ -9,6 +117,8 @@ body {
     border: 1px solid #ccc;
     padding: 20px;
     border-radius: 5px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .button-group {
@@ -31,10 +141,13 @@ button:hover {
 
 textarea {
     width: 100%;
-    height: 200px;
+    height: 400px;
     margin: 10px 0;
     padding: 10px;
     box-sizing: border-box;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .file-info {
@@ -71,12 +184,26 @@ textarea {
 }
 
 /* 文件夹内容样式 */
+.file-list {
+    margin-top: 10px;
+}
+
 .folder-entry {
     margin: 5px 0;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    background-color: #f9f9f9;
+    background-color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.folder-entry:hover {
+    background-color: #e3f2fd;
+}
+
+.folder-entry.selected {
+    background-color: #bbdefb;
 }
 
 .file-item, .folder-item {
@@ -88,18 +215,23 @@ textarea {
 .file-name, .folder-name {
     flex: 1;
     font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .file-size {
     color: #666;
     min-width: 80px;
     text-align: right;
+    font-size: 0.9em;
 }
 
 .file-date {
     color: #666;
     min-width: 150px;
     text-align: right;
+    font-size: 0.9em;
 }
 
 /* 当前路径样式 */
@@ -110,6 +242,7 @@ textarea {
     border-radius: 4px;
     font-family: monospace;
     word-break: break-all;
+    font-size: 0.9em;
 }
 
 .current-path strong {

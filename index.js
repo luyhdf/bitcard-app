@@ -1,3 +1,4 @@
+let currentDirHandle = null;
 let currentFileHandle = null;
 
 // 获取DOM元素
@@ -9,6 +10,7 @@ const fileInfo = document.getElementById('fileInfo');
 const fileContent = document.getElementById('fileContent');
 const folderInfo = document.getElementById('folderInfo');
 const folderContent = document.getElementById('folderContent');
+const currentPath = document.getElementById('currentPath');
 const toast = document.getElementById('toast');
 
 // 显示提示信息
@@ -18,6 +20,22 @@ function showToast(message, isError = false) {
     setTimeout(() => {
         toast.className = 'toast';
     }, 3000);
+}
+
+// 读取文件内容
+async function readFile(fileHandle) {
+    try {
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+        
+        fileInfo.textContent = `文件名: ${file.name}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
+        fileContent.value = content;
+        
+        currentFileHandle = fileHandle;
+        showToast('文件读取成功');
+    } catch (error) {
+        showToast('读取文件失败: ' + error.message, true);
+    }
 }
 
 // 打开文件夹
@@ -35,18 +53,15 @@ openFolderBtn.addEventListener('click', async () => {
             return;
         }
 
-        const dirHandle = await window.showDirectoryPicker();
+        currentDirHandle = await window.showDirectoryPicker();
         folderInfo.style.display = 'block';
         folderContent.innerHTML = '';
         
         // 显示当前文件夹路径
-        const pathDiv = document.createElement('div');
-        pathDiv.className = 'current-path';
-        pathDiv.innerHTML = `<strong>当前路径：</strong>${dirHandle.name}`;
-        folderContent.appendChild(pathDiv);
+        currentPath.innerHTML = `<strong>当前路径：</strong>${currentDirHandle.name}`;
         
         // 遍历文件夹内容
-        for await (const entry of dirHandle.values()) {
+        for await (const entry of currentDirHandle.values()) {
             const div = document.createElement('div');
             div.className = 'folder-entry';
             
@@ -59,6 +74,19 @@ openFolderBtn.addEventListener('click', async () => {
                         <span class="file-date">${new Date(file.lastModified).toLocaleString()}</span>
                     </div>
                 `;
+                
+                // 添加点击事件
+                div.addEventListener('click', async () => {
+                    // 移除其他选中项
+                    document.querySelectorAll('.folder-entry.selected').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                    // 添加当前选中项
+                    div.classList.add('selected');
+                    
+                    // 读取文件
+                    await readFile(entry);
+                });
             } else if (entry.kind === 'directory') {
                 div.innerHTML = `
                     <div class="folder-item">
@@ -84,17 +112,11 @@ openFolderBtn.addEventListener('click', async () => {
     }
 });
 
-// 读取文件
+// 读取文件按钮
 readFileBtn.addEventListener('click', async () => {
     try {
         const [fileHandle] = await window.showOpenFilePicker();
-        const file = await fileHandle.getFile();
-        const content = await file.text();
-        
-        fileInfo.textContent = `文件名: ${file.name}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
-        fileContent.value = content;
-        
-        showToast('文件读取成功');
+        await readFile(fileHandle);
     } catch (error) {
         if (error.name !== 'AbortError') {
             showToast('读取文件失败: ' + error.message, true);
