@@ -2,8 +2,8 @@ let currentDirHandle = null;
 let currentFileHandle = null;
 
 // 获取DOM元素
-const readFileBtn = document.getElementById('readFileBtn');
 const saveAsFileBtn = document.getElementById('saveAsFileBtn');
+const saveFileBtn = document.getElementById('saveFileBtn');
 const openFolderBtn = document.getElementById('openFolderBtn');
 const showHiddenFiles = document.getElementById('showHiddenFiles');
 const fileInfo = document.getElementById('fileInfo');
@@ -20,22 +20,6 @@ function showToast(message, isError = false) {
     setTimeout(() => {
         toast.className = 'toast';
     }, 3000);
-}
-
-// 读取文件内容
-async function readFile(fileHandle) {
-    try {
-        const file = await fileHandle.getFile();
-        const content = await file.text();
-        
-        fileInfo.textContent = `文件名: ${file.name}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
-        fileContent.value = content;
-        
-        currentFileHandle = fileHandle;
-        showToast('文件读取成功');
-    } catch (error) {
-        showToast('读取文件失败: ' + error.message, true);
-    }
 }
 
 // 检查是否是隐藏文件
@@ -75,7 +59,6 @@ async function refreshFileList() {
         for await (const entry of currentDirHandle.values()) {
             // 如果隐藏文件开关关闭，且是隐藏文件，则跳过
             if (!showHiddenFiles.checked && isHiddenFile(entry.name)) {
-                console.log('隐藏文件:', entry.name); // 调试用
                 continue;
             }
             
@@ -102,7 +85,18 @@ async function refreshFileList() {
                     div.classList.add('selected');
                     
                     // 读取文件
-                    await readFile(entry);
+                    try {
+                        const file = await entry.getFile();
+                        const content = await file.text();
+                        
+                        fileInfo.textContent = `文件名: ${file.name}\n大小: ${formatFileSize(file.size)}\n修改时间: ${new Date(file.lastModified).toLocaleString()}`;
+                        fileContent.value = content;
+                        
+                        currentFileHandle = entry;
+                        showToast('文件读取成功');
+                    } catch (error) {
+                        showToast('读取文件失败: ' + error.message, true);
+                    }
                 });
             } else if (entry.kind === 'directory') {
                 div.innerHTML = `
@@ -161,26 +155,51 @@ openFolderBtn.addEventListener('click', async () => {
     }
 });
 
-// 读取文件按钮
-readFileBtn.addEventListener('click', async () => {
+// 保存文件
+saveFileBtn.addEventListener('click', async () => {
+    if (!fileContent.value) {
+        showToast('没有内容可保存', true);
+        return;
+    }
+
+    if (!currentFileHandle) {
+        showToast('请先打开或另存为文件', true);
+        return;
+    }
+
     try {
-        const [fileHandle] = await window.showOpenFilePicker();
-        await readFile(fileHandle);
+        const writable = await currentFileHandle.createWritable();
+        await writable.write(fileContent.value);
+        await writable.close();
+        showToast('文件保存成功');
     } catch (error) {
-        if (error.name !== 'AbortError') {
-            showToast('读取文件失败: ' + error.message, true);
-        }
+        showToast('保存文件失败: ' + error.message, true);
     }
 });
 
 // 保存文件
 saveAsFileBtn.addEventListener('click', async () => {
+    if (!fileContent.value) {
+        showToast('没有内容可保存', true);
+        return;
+    }
+
     try {
-        const fileHandle = await window.showSaveFilePicker();
+        const fileHandle = await window.showSaveFilePicker({
+            suggestedName: currentFileHandle ? currentFileHandle.name : 'untitled.txt',
+            types: [{
+                description: '文本文件',
+                accept: {
+                    'text/plain': ['.txt']
+                }
+            }]
+        });
+        
         const writable = await fileHandle.createWritable();
         await writable.write(fileContent.value);
         await writable.close();
         
+        currentFileHandle = fileHandle;
         showToast('文件保存成功');
     } catch (error) {
         if (error.name !== 'AbortError') {
