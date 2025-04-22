@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地文件读写示例</title>
+    <link rel="stylesheet" href="file_reader.css">
+</head>
+<body>
+    <div class="container">
+        <h2>本地文件读写示例</h2>
+        
+        <div class="button-group">
+            <button id="readFileBtn">读取文件</button>
+            <button id="saveAsFileBtn">另存为</button>
+            <button id="openFolderBtn">打开文件夹</button>
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            未选择文件
+        </div>
+
+        <div class="folder-info" id="folderInfo" style="display: none;">
+            <h3>文件夹内容：</h3>
+            <div id="folderContent"></div>
+        </div>
+
+        <textarea id="fileContent" placeholder="文件内容将显示在这里..."></textarea>
+    </div>
+
+    <!-- Toast提示容器 -->
+    <div id="toast" class="toast"></div>
+
+    <script src="file_reader.js"></script>
+</body>
+</html> 
